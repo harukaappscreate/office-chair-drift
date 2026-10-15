@@ -1,0 +1,28 @@
+{
+  "name": "office-chair-drift",
+  "version": "1.0.0",
+  "description": "出社拒否！オフィスチェア・ドリフト無双 - Three.js PBR & Bloom, Web Audio ユーロビート搭載の3Dオフィス爆走アクションゲーム",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve -l 3000 .",
+    "dev": "npx serve -l 3000 .",
+    "check": "for f in js/*.js js/*/*.js; do node --check \"$f\"; done"
+  },
+  "keywords": [
+    "threejs",
+    "webgl",
+    "game",
+    "drift",
+    "office-chair",
+    "3d",
+    "web-audio-api",
+    "pbr",
+    "bloom"
+  ],
+  "author": "haruka_apps",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/harukaappscreate/office-chair-drift/issues"
+  },
+  "homepage": "https://github.com/harukaappscreate/office-chair-drift#readme"
+}

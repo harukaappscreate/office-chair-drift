@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>出社拒否！オフィスチェア・ドリフト無双 (Office Chair Drift)</title>
+  <meta name="description" content="消火器ジェットを改造装着したオフィスチェアで夜のオフィスを爆走！迫りくる巨大却下ハンコ・稟議書タワー・巨大決裁ロボ社長を粉砕し、定時退社を勝ち取れ！Three.js最新PBR・Bloom＆Web Audioユーロビート搭載の超爽快3Dアクションゲーム。" />
+  <meta name="keywords" content="Three.js, WebGL, 3Dゲーム, ドリフト, オフィスチェア, バカゲー, Web Audio, PBR, JavaScript, ゲーム" />
+  <meta name="theme-color" content="#ff2a5f" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="alternate icon" href="favicon.svg" />
+
+  <!-- Open Graph / Facebook / Discord -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="出社拒否！オフィスチェア・ドリフト無双 (Office Chair Drift)" />
+  <meta property="og:description" content="消火器ジェットを改造装着したオフィスチェアで夜のオフィスを爆走！巨大却下ハンコ・巨大決裁ロボ社長を粉砕し、定時退社を勝ち取れ！" />
+  <meta property="og:image" content="assets/banner.svg" />
+  <meta property="og:locale" content="ja_JP" />
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="出社拒否！オフィスチェア・ドリフト無双 (Office Chair Drift)" />
+  <meta name="twitter:description" content="消火器ジェットを改造装着したオフィスチェアで夜のオフィスを爆走！巨大却下ハンコ・巨大決裁ロボ社長を粉砕し、定時退社を勝ち取れ！" />
+  <meta name="twitter:image" content="assets/banner.svg" />
+
+  <link rel="stylesheet" href="css/style.css" />
+  <!-- Three.js Latest via CDN (Import Map) -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@latest/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@latest/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <!-- 3D Canvas Container -->
+  <div id="canvas-container"></div>
+
+  <!-- 集中線オーバーレイ (ブースト・ドリフト時に表示) -->
+  <div id="speed-lines" class="speed-lines"></div>
+
+  <!-- ダメージ・フィーバー画面フラッシュ -->
+  <div id="screen-flash" class="screen-flash"></div>
+
+  <!-- ポップアップ文字コンテナ (「承認!!」「残業粉砕!!」など) -->
+  <div id="popup-container" class="popup-container"></div>
+
+  <!-- HUD (プレイ中UI) -->
+  <div id="hud" class="hud hidden">
+    <div class="hud-top">
+      <div class="hud-box score-box">
+        <div class="hud-label">粉砕した残業時間 (SCORE)</div>
+        <div class="hud-value"><span id="score-val">0.0</span> <small>時間</small></div>
+        <div class="best-score-sub">自己ベスト: <span id="hud-best-val">0.0</span>h</div>
+      </div>
+
+      <div class="hud-box distance-box">
+        <div class="hud-label">定時退社ゲートまで</div>
+        <div class="hud-value"><span id="gate-dist-val">450</span> <small>m</small></div>
+        <div class="gate-level" id="stage-label">第1営業部フロア</div>
+      </div>
+
+      <div class="hud-box combo-box" id="combo-box">
+        <div class="combo-num"><span id="combo-val">0</span> <small>COMBO!</small></div>
+        <div class="combo-sub" id="combo-rank">平社員ドリフト</div>
+      </div>
+    </div>
+
+    <!-- 巨大決裁ロボ社長 ボスHPゲージ -->
+    <div id="boss-hud" class="boss-hud hidden">
+      <div class="boss-title">⚠️ 緊急出撃：巨大決裁ロボ社長「ブラック・カイザー」 ⚠️</div>
+      <div class="boss-bar-bg">
+        <div id="boss-hp-bar" class="boss-bar-fill" style="width: 100%;"></div>
+      </div>
+      <div class="boss-hint">ハンコを回転スピンで撃ち返すか、有給ブースト/ジャンプ体当たりで論破せよ！</div>
+    </div>
+
+    <!-- 中央カットイン告知 -->
+    <div id="cutin-banner" class="cutin-banner hidden">
+      <div class="cutin-text" id="cutin-text">定時退社ゲート突破！！</div>
+    </div>
+
+    <div class="hud-bottom">
+      <!-- メンタル(HP)ゲージ -->
+      <div class="gauge-wrap">
+        <div class="gauge-header">
+          <span>社畜メンタル残量 (HP)</span>
+          <span id="hp-text">100%</span>
+        </div>
+        <div class="gauge-bar-bg">
+          <div id="hp-bar" class="gauge-bar hp-fill" style="width: 100%;"></div>
+        </div>
+      </div>
+
+      <!-- 有給ブーストゲージ -->
+      <div class="gauge-wrap">
+        <div class="gauge-header">
+          <span>🔥 有給ジェットゲージ (SPACE / 右クリック / ボタンで発動)</span>
+          <span id="boost-text">READY!</span>
+        </div>
+        <div class="gauge-bar-bg">
+          <div id="boost-bar" class="gauge-bar boost-fill" style="width: 100%;"></div>
+        </div>
+      </div>
+
+      <!-- 操作ガイド＆モバイルボタン -->
+      <div class="controls-bar">
+        <div class="pc-hint">
+          <span><b>[A/D] [←/→] マウス移動</b>：左右ドリフト</span>
+          <span><b>[W/↑/左クリック]</b>：回転スピン決裁</span>
+          <span><b>[SPACE/右クリック]</b>：有給ジェット</span>
+          <span><b>[緑の複合機]</b>：大ジャンプ台</span>
+        </div>
+        <div class="mobile-buttons">
+          <button id="btn-bgm" class="action-btn bgm-btn">🔊 BGM ON</button>
+          <button id="btn-spin" class="action-btn spin-btn">🌪️ 回転スピン</button>
+          <button id="btn-boost" class="action-btn boost-btn">🚀 有給ブースト</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- タイトル画面 -->
+  <div id="title-screen" class="overlay-screen">
+    <div class="title-card">
+      <div class="badge-tag">Three.js 最新版・PBR＆Bloom搭載 超カオス物理バカゲー</div>
+      <h1 class="game-title">
+        <span class="title-sub">出社拒否！</span>
+        オフィスチェア<br />ドリフト無双
+      </h1>
+      <p class="game-desc">
+        消火器ジェットを改造装着したオフィスチェアで夜のオフィスを爆走！<br />
+        迫りくる<b>「巨大ハンコ」「稟議書タワー」「巨大決裁ロボ社長」</b>を<br />
+        <b>回転ドリフト・複合機大ジャンプ・有給ブースト</b>で粉砕し、定時退社を勝ち取れ！
+      </p>
+
+      <div class="how-to-grid">
+        <div class="how-card">
+          <div class="how-icon">🪑💨</div>
+          <div class="how-title">ドリフト＆ジャンプ</div>
+          <div class="how-body">左右移動でタイヤ痕を残す高速ドリフト！緑色に光る「暴走複合機」に乗れば空中大ジャンプ！</div>
+        </div>
+        <div class="how-card">
+          <div class="how-icon">🌪️💮</div>
+          <div class="how-title">回転スピン決裁</div>
+          <div class="how-body">W / ↑ / 左クリックで大回転！ハンコを「承認!!」爆破し、ボス戦ではハンコを社長へ跳ね返す！</div>
+        </div>
+        <div class="how-card">
+          <div class="how-icon">🤖💥</div>
+          <div class="how-title">社長ロボ＆ラグドール</div>
+          <div class="how-body">ゲート前の巨大ロボ社長を撃破せよ！メンタルが尽きると社員が椅子から吹っ飛ぶスロー演出発動！</div>
+        </div>
+      </div>
+
+      <button id="start-btn" class="primary-btn">🔥 今すぐ退社する（ユーロビートBGM付）</button>
+    </div>
+  </div>
+
+  <!-- リザルト（ゲームオーバー）画面 -->
+  <div id="result-screen" class="overlay-screen hidden">
+    <div class="result-card">
+      <div class="result-header" id="result-header">業務終了！！（社畜ラグドール大クラッシュ）</div>
+      <div class="rank-badge-wrap">
+        <div class="rank-label">本日の退社称号</div>
+        <div class="rank-title" id="result-rank">音速のハンコ破壊王</div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span class="stat-label">粉砕した残業時間 (自己ベスト: <b id="res-best">0.0</b>h)</span>
+          <span class="stat-val" id="res-score">0.0 時間</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">突破した退社ゲート＆社長撃破</span>
+          <span class="stat-val" id="res-gates">0 フロア</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">弾き飛ばしたハンコ＆上司</span>
+          <span class="stat-val" id="res-smashed">0 個</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">最大決裁コンボ</span>
+          <span class="stat-val" id="res-combo">0 COMBO</span>
+        </div>
+      </div>
+
+      <div class="result-comment" id="result-comment">
+        「君の椅子だけF1のエンジン積んでない？」と総務部から呼び出しを食らいました。
+      </div>
+
+      <div class="result-actions">
+        <button id="retry-btn" class="primary-btn">🔄 もう一度出社拒否する</button>
+        <button id="share-btn" class="secondary-btn">📋 退社記録をコピーして自慢する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- モジュール群の読み込み（拡張性を重視した分割構成） -->
+  <script defer src="js/config.js"></script>
+  <script defer src="js/systems/SoundSystem.js"></script>
+  <script defer src="js/systems/EffectSystem.js"></script>
+  <script defer src="js/systems/GameState.js"></script>
+  <script defer src="js/core/SceneManager.js"></script>
+  <script defer src="js/entities/Player.js"></script>
+  <script defer src="js/entities/Environment.js"></script>
+  <script defer src="js/entities/ObstacleManager.js"></script>
+  <script defer src="js/main.js"></script>
+
+  <!-- Three.js Latest + Post-Processing (UnrealBloom) の読み込みとブートストラップ -->
+  <script type="module">
+    import * as THREE from 'three';
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+    import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+    window.THREE = THREE;
+    window.THREE_ADDONS = {
+      EffectComposer,
+      RenderPass,
+      UnrealBloomPass,
+      OutputPass
+    };
+
+    if (window.OfficeDriftGame && typeof window.OfficeDriftGame.tryStart === 'function') {
+      window.OfficeDriftGame.tryStart();
+    }
+  </script>
+</body>
+</html>
